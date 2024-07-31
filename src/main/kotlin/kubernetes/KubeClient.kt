@@ -5,10 +5,10 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.kubernetes.client.openapi.ApiClient
 import io.kubernetes.client.openapi.ApiException
 import io.kubernetes.client.openapi.apis.BatchV1Api
+import io.kubernetes.client.openapi.apis.BatchV1Api.APIcreateNamespacedJobRequest
 import io.kubernetes.client.openapi.apis.CoreV1Api
 import io.kubernetes.client.openapi.models.*
 import io.kubernetes.client.util.Config
-import okhttp3.internal.wait
 import java.util.concurrent.TimeUnit
 
 class KubeClient(
@@ -23,8 +23,9 @@ class KubeClient(
 
     fun run(podName: String, image: String, script: String): String {
         createNamespacedConfigMap(podName, script)
-        val result = createNamespacedJob(podName, image)
-        return result.metadata!!.name!!;
+        val job = createNamespacedJob(podName, image)
+        val result = job.execute()
+        return result.metadata.name
     }
 
     fun awaitCompletion(jobName: String) {
@@ -32,8 +33,8 @@ class KubeClient(
 
         while (true) {
             try {
-                val job = batchApi.readNamespacedJob(jobName, namespace, null)
-                val jobStatus = job.status
+                val jobResult = batchApi.readNamespacedJob(jobName, namespace).execute()
+                val jobStatus = jobResult.status
 
                 if (jobStatus?.succeeded != null && jobStatus.succeeded!! > 0) {
                     log.info { "Job '$jobName' succeeded" }
@@ -54,7 +55,7 @@ class KubeClient(
         }
     }
 
-    private fun createNamespacedJob(podName: String, image: String): V1Job {
+    private fun createNamespacedJob(podName: String, image: String): APIcreateNamespacedJobRequest {
         val body = V1Job().apply {
             metadata = V1ObjectMeta().apply { generateName = "$podName-" }
             spec = V1JobSpec().apply {
@@ -88,7 +89,7 @@ class KubeClient(
                 }
             }
         }
-        return batchApi.createNamespacedJob(namespace, body, null, null, null, null)
+        return batchApi.createNamespacedJob(namespace, body)
     }
 
     private fun createNamespacedConfigMap(podName: String, script: String) {
@@ -99,12 +100,8 @@ class KubeClient(
         try {
             coreApi.createNamespacedConfigMap(
                 namespace,
-                configMap,
-                null,
-                null,
-                null,
-                null
-            )
+                configMap
+            ).execute()
         } catch (e: ApiException) {
             log.info { "ConfigMap already exists: ${e.responseBody}" }
         }

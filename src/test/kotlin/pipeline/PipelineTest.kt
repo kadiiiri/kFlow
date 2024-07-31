@@ -4,7 +4,7 @@ import operator.Operator
 import org.junit.jupiter.api.Test
 
 class PipelineTest {
-    val image = "ubuntu:latest"
+    private val image = "ubuntu:latest"
     @Test
     fun test() {
         val script1 = javaClass.getResource("/scripts/script1.sh")!!.readText()

@@ -1,9 +1,11 @@
+import org.gradle.kotlin.dsl.support.kotlinCompilerOptions
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "2.0.0"
     application
 }
+
 
 group = "com.github"
 version = "1.0-SNAPSHOT"
@@ -13,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    val kubernetes = "15.0.1"
+    val kubernetes = "21.0.0"
     val kotlinLogging = "7.0.0"
     val slf4jSimple = "2.0.13"
 
@@ -27,10 +29,6 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-}
-
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
 }
 
 application {
